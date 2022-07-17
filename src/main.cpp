@@ -1,6 +1,8 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include <iostream>
+#include <fstream>
+#include <string>
 
 // Callback for window resizing
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -17,30 +19,22 @@ void processInput(GLFWwindow *window)
   }
 }
 
-const char *vertexShaderSource = 
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.xyz, 1.0);\n"
-    "}\0";
-const char *fragmentShaderSource =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n\n"
-    "void main()\n"
-    "{\n"
-    " FragColor = vec4(0.8f, 0.4f, 0.3f, 1.0f);\n"
-    "}\n\0";
-const char *fragmentShaderSource2 =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n\n"
-    "void main()\n"
-    "{\n"
-    " FragColor = vec4(0.9f, 0.2f, 0.7f, 1.0f);\n"
-    "}\n\0";
+// Read file contents into a stream
+const char* readFileToString(std::string filename) {
+  std::ifstream ifs(filename);
+  std::string content;
+  content.assign( (std::istreambuf_iterator<char>(ifs) ),
+    (std::istreambuf_iterator<char>()));
+  ifs.close();
+  return strdup(content.c_str());
+}
 
 int main()
 {
+  // Shader reading
+  const char* vertexShaderSource = readFileToString("shaders/vertexSimple.vert.glsl");
+  const char* fragmentShaderSource = readFileToString("shaders/fragRed.frag.glsl");
+  const char* fragmentShaderSource2 = readFileToString("shaders/fragPink.frag.glsl");
   // GLFW process initialization and flags
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
