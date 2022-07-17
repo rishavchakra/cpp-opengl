@@ -1,0 +1,8 @@
+[requires]
+glfw/3.3.7
+glad/0.1.36
+
+
+[generators]
+cmake
+cmake_find_package
