@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <math.h>
+#include <unistd.h>
 
 // Callback for window resizing
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -20,21 +22,36 @@ void processInput(GLFWwindow *window)
 }
 
 // Read file contents into a stream
-const char* readFileToString(std::string filename) {
-  std::ifstream ifs(filename);
-  std::string content;
-  content.assign( (std::istreambuf_iterator<char>(ifs) ),
-    (std::istreambuf_iterator<char>()));
-  ifs.close();
+const char* readFileToString(const std::string filename) {
+  std::ifstream file_stream(filename);
+  if (!file_stream.is_open()) {
+    std::cerr << "Could not open file: " << filename << std::endl;
+    // exit(EXIT_FAILURE);
+  }
+  std::string content = std::string( 
+    std::istreambuf_iterator<char>(file_stream),
+    std::istreambuf_iterator<char>()
+  );
+  file_stream.close();
   return strdup(content.c_str());
 }
 
 int main()
 {
+  // Checking the current working directory
+  char path_buffer[PATH_MAX];
+  getwd(path_buffer);
+  std::cout << "Current directory: " << path_buffer << std::endl;
+
   // Shader reading
-  const char* vertexShaderSource = readFileToString("shaders/vertexSimple.vert.glsl");
-  const char* fragmentShaderSource = readFileToString("shaders/fragRed.frag.glsl");
-  const char* fragmentShaderSource2 = readFileToString("shaders/fragPink.frag.glsl");
+  const char* vertexShaderSource = readFileToString("../../shaders/vertexSimple.vert.glsl");
+  const char* fragmentShaderSource = readFileToString("../../shaders/fragRed.frag.glsl");
+  const char* fragmentShaderSource2 = readFileToString("../../shaders/fragPink.frag.glsl");
+  // Source file reading debugging
+  // std::cout << "Vertex Shader:\n" << vertexShaderSource << "\n"
+  //   << "Fragment Shader 1:\n" << fragmentShaderSource << "\n"
+  //   << "Fragment Shader 2:\n" << fragmentShaderSource2 << std::endl;
+
   // GLFW process initialization and flags
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -50,7 +67,7 @@ int main()
   {
     std::cout << "Failed to create window" << std::endl;
     glfwTerminate();
-    return -1;
+    exit(EXIT_FAILURE);
   }
   std::cout << "Created window" << std::endl;
   glfwMakeContextCurrent(window);
@@ -61,7 +78,7 @@ int main()
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
     std::cout << "Failed to initialize GLAD" << std::endl;
-    return -1;
+    exit(EXIT_FAILURE);
   }
 
   // Constructs a viewport with initial size 800x600
@@ -102,7 +119,7 @@ int main()
               << "Vertex Info Log: " << infoLogVert << "\n"
               << "Fragment Info Log: " << infoLogFrag << std::endl;
 
-    return 1;
+    exit(EXIT_FAILURE);
   }
 
   // Creating the shader program that links the vertex and fragment shaders
@@ -124,12 +141,15 @@ int main()
   glGetProgramiv(shaderProgram2, GL_LINK_STATUS, &successLink2);
   if (!successLink || !successLink2)
   {
-    glGetShaderInfoLog(shaderProgram, 512, NULL, infoLogLink);
+    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLogLink);
+
+    std::cout << "Shader program 1: " << successLink << "\n"
+      << "Shader program 2: " << successLink2 << std::endl; 
     std::cout << "ERROR: Shader linking failed\n"
               << "Linking Info Log: \n" 
               << infoLogLink << std::endl;
 
-    return 1;
+    exit(EXIT_FAILURE);
   }
 
   // Telling GL to use the shader program as the shader pipeline
@@ -140,12 +160,16 @@ int main()
   glDeleteShader(fragmentShader);
   glDeleteShader(fragmentShader2);
 
+  // does not need to Use the shader program to find location,
+  // but does need to Use the shader program to update the value
+  int uniformFragColorLocation = glGetUniformLocation(shaderProgram, "uni_color"); // Returns -1 if no matching uniform was found
+
   // GL square drawing
   float vertices[] = {
-      -0.5f, -0.5f, 0.0f,
-      0.5f, -0.5f, 0.0f,
-      0.5f, 0.5f, 0.0f,
-      -0.5f, 0.5f, 0.0f
+      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+      0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+      0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+      -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f
       };
   unsigned int indices[] = {
     0, 2, 1,
@@ -163,7 +187,6 @@ int main()
     0.7f, 0.3f, 0.0f,
   };
 
-  /*
   unsigned int VBO, VAO, EBO;
   glGenVertexArrays(1, &VAO);
   // Bind Vertex Array Object
@@ -175,11 +198,15 @@ int main()
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-  // Enabling vertex attributes (none by default)
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+  // Enabling vertex attributes
+  // Layout 0 = posiiton
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
-  */
+  // Layout 1 = color
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
 
+/*
   // Drawing two triangles with separate VAOs and VBOs
   unsigned int VBO1, VAO1, VBO2, VAO2;
   glGenVertexArrays(1, &VAO1);
@@ -197,6 +224,7 @@ int main()
   glBufferData(GL_ARRAY_BUFFER, sizeof(verticesTriangle2), verticesTriangle2, GL_STATIC_DRAW);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
+*/
 
   // Run loop
   while (!glfwWindowShouldClose(window))
@@ -210,11 +238,16 @@ int main()
 
     glUseProgram(shaderProgram);      // Sets the shader program to be used
 
-    /*
     glBindVertexArray(VAO);           // Binds the vertex array
     // glDrawArrays(GL_TRIANGLES, 0, 3); // Draws from the currently bound buffer
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    */
+
+/*
+   // Fragment shader uniforms
+   float time = glfwGetTime();
+   float redVal = sin(time)/2.0f + 0.5f; // Modulating between 0 and 1
+   // This needs to be done after the appropriate shader program is used
+   glUniform4f(uniformFragColorLocation, redVal, 0.3f, 0.4f, 1.0f); // Pass the value from the CPU to GPU at the uniform location
 
     // Drawing two triangles with two different VAO/VBOs
     glBindVertexArray(VAO1);
@@ -223,6 +256,7 @@ int main()
     glUseProgram(shaderProgram2);
     glBindVertexArray(VAO2);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+*/
 
     // Swap buffers and polling
     glfwSwapBuffers(window);
@@ -237,5 +271,5 @@ int main()
   */
   glDeleteProgram(shaderProgram);
   glfwTerminate();
-  return 0;
+  exit(EXIT_SUCCESS);
 }
