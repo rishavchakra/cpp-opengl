@@ -1,4 +1,5 @@
 #include "glad/glad.h"
+// GLAD needs to be included before GLFW
 #include "GLFW/glfw3.h"
 #include <iostream>
 #include <math.h>
@@ -19,37 +20,7 @@ void processInput(GLFWwindow *window) {
   }
 }
 
-// Read file contents into a stream
-const char *readFileToString(const std::string filename) {
-  std::ifstream file_stream(filename);
-  if (!file_stream.is_open()) {
-    std::cerr << "Could not open file: " << filename << std::endl;
-    // exit(EXIT_FAILURE);
-  }
-  std::string content = std::string(std::istreambuf_iterator<char>(file_stream),
-                                    std::istreambuf_iterator<char>());
-  file_stream.close();
-  return strdup(content.c_str());
-}
-
 int main() {
-  // Checking the current working directory
-  char path_buffer[PATH_MAX];
-  getwd(path_buffer);
-  std::cout << "Current directory: " << path_buffer << std::endl;
-
-  // Shader reading
-  const char *vertexShaderSource =
-      readFileToString("../../shaders/vertexSimple.vert.glsl");
-  const char *fragmentShaderSource =
-      readFileToString("../../shaders/fragRed.frag.glsl");
-  const char *fragmentShaderSource2 =
-      readFileToString("../../shaders/fragPink.frag.glsl");
-  // Source file reading debugging
-  // std::cout << "Vertex Shader:\n" << vertexShaderSource << "\n"
-  //   << "Fragment Shader 1:\n" << fragmentShaderSource << "\n"
-  //   << "Fragment Shader 2:\n" << fragmentShaderSource2 << std::endl;
-
   // GLFW process initialization and flags
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -110,9 +81,12 @@ int main() {
   std::cout << "Active uniforms: " << count << std::endl;
 
   // GL square drawing
-  float vertices[] = {-0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f, 0.5f, -0.5f,
-                      0.0f,  0.0f,  1.0f,  0.0f, 0.5f, 0.5f, 0.0f, 0.0f,
-                      0.0f,  1.0f,  -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f};
+  float vertices[] = {
+      -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // Bottom left
+      0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // Bottom right
+      0.5f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f, // Top right
+      -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 1.0f  // Top left
+  };
   unsigned int indices[] = {0, 2, 1, 0, 3, 2};
 
   // Two triangles buffers
